@@ -44,8 +44,9 @@ class Simple extends React.Component {
 
     componentDidMount() {
         window.addEventListener('deviceorientation', (e) => {
-            const { alpha, beta, gamma } = e;
-            console.log(alpha, beta, gamma);
+
+            const { alpha, beta, gamma, absolute } = e;
+            console.log(alpha, beta, gamma, absolute);
             this.setState({
                 camera: {
                     lon: -alpha,
