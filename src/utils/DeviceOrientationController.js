@@ -81,6 +81,7 @@ const DeviceOrientationController = function ( object, domElement ) {
         relativeVerticalFOV = THREE.Math.radToDeg( 2 * Math.atan( relativeFOVFrustrumHeight / 2000 ) );
 
         this.object.fov = relativeVerticalFOV;
+        this.object.updateProjectionMatrix();
     }.bind( this );
 
     this.onDeviceOrientationChange = function ( event ) {
