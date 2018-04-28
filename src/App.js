@@ -11,80 +11,65 @@ class Simple extends React.Component {
 
         // construct the position vector here, because if we use 'new' within render,
         // React will think that things have changed when they have not.
-        this.cameraPosition = new THREE.Vector3(0, 0, 5);
 
         this.state = {
             // cubeRotation: new THREE.Euler(),
-            cameraQuaternion: new THREE.Quaternion(),
+            // cameraQuaternion: new THREE.Quaternion(),
         };
+    }
+    init() {
+        const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1100 );
 
-        this._onAnimate = () => {
-            // we will get this callback every frame
+        const scene = new THREE.Scene();
 
-            // pretend cubeRotation is immutable.
-            // this helps with updates and pure rendering.
-            // React will be sure that the rotation has now updated.
-            this.controls.update();
-            // const { alpha, beta, gamma, orient } = this.deviceOrientation;
-            // this.setState({
-            //     cameraQuaternion: createQuaternion( alpha, beta, gamma, orient ),
-            // });
-        };
+        const geometry = new THREE.SphereBufferGeometry( 500, 60, 40 );
+        // invert the geometry on the x-axis so that all of the faces point inward
+        geometry.scale( - 1, 1, 1 );
+
+        const material = new THREE.MeshBasicMaterial( {
+            map: new THREE.TextureLoader().load( sphericalImgUrl ),
+        } );
+
+        const mesh = new THREE.Mesh( geometry, material );
+
+        scene.add( mesh );
+
+        const rerenderer = new THREE.WebGLRenderer();
+        rerenderer.setPixelRatio( window.devicePixelRatio );
+        rerenderer.setSize( window.innerWidth, window.innerHeight );
+
+        this.container.appendChild( rerenderer.domElement );
+
+        // Add DeviceOrientation Controls
+        const controls = new DeviceOrientationController(
+            camera,
+            this.container,
+        );
+        controls.connect();
+
+        this.camera = camera;
+        this.scene = scene;
+        this.rerenderer = rerenderer;
+        this.controls = controls;
+    }
+
+    // Render loop
+    animate = () => {
+        this.controls.update();
+        this.rerenderer.render( this.scene, this.camera );
+        requestAnimationFrame( this.animate );
     }
 
     componentDidMount() {
-        const controls = new DeviceOrientationController(
-            this.refs.camera,
-            ReactDOM.findDOMNode(this.refs.panoRoot)
-        );
-        controls.connect();
-        this.controls = controls;
+        this.init();
+
+        this.animate();
     }
+
     render() {
-        const width = window.innerWidth; // canvas width
-        const height = window.innerHeight; // canvas height
-
-        // let { lon, lat } = this.state.camera;
-        // lat = Math.max(-85, Math.min(85, lat));
-        // const phi = THREE.Math.degToRad(90 - lat);
-        // const theta = THREE.Math.degToRad(lon);
-        //
-        // const cameraPosition = new THREE.Vector3(
-        //     500 * Math.sin(phi) * Math.cos(theta),
-        //     500 * Math.cos(phi),
-        //     500 * Math.sin(phi) * Math.sin(theta),
-        // );
-        
-        // console.log(cameraPosition);
         return (
-            <React3
-                mainCamera="camera" // this points to the perspectiveCamera which has the name set to "camera" below
-                width={width}
-                height={height}
-                ref="panoRoot"
-
-                onAnimate={this._onAnimate}
-            >
-                <scene>
-                    <perspectiveCamera
-                        name="camera"
-                        ref="camera"
-                    />
-                    <mesh
-                        // rotation={this.state.cubeRotation}
-                        scale={new THREE.Vector3(-1, 1, 1)}
-                    >
-                        <sphereGeometry
-                            radius={500}
-                            widthSegments={600}
-                            heightSegments={400}
-                        />
-                        <meshBasicMaterial>
-                            <texture url={sphericalImgUrl} />
-                        </meshBasicMaterial>
-                    </mesh>
-                </scene>
-            </React3>);
+            <div ref={(dom) => {this.container = dom; }} />
+        );
     }
 }
 
