@@ -1,6 +1,8 @@
 import React from 'react';
-import React3 from 'react-three-renderer';
+import React3 from 'react-three-renderer'
+import ReactDOM from 'react-dom';
 import * as THREE from 'three';
+import DeviceOrientationController from './utils/DeviceOrientationController';
 import sphericalImgUrl from './images/spherical_texture.jpg';
 
 class Simple extends React.Component {
@@ -13,11 +15,7 @@ class Simple extends React.Component {
 
         this.state = {
             // cubeRotation: new THREE.Euler(),
-            camera: {
-                lon: 0,
-                lat: 0,
-                phi: 0,
-            },
+            cameraQuaternion: new THREE.Quaternion(),
         };
 
         this._onAnimate = () => {
@@ -26,49 +24,36 @@ class Simple extends React.Component {
             // pretend cubeRotation is immutable.
             // this helps with updates and pure rendering.
             // React will be sure that the rotation has now updated.
-            const { lon, lat, phi } = this.state.camera;
-            this.setState({
-                // cubeRotation: new THREE.Euler(
-                //     this.state.cubeRotation.x + 0.005,
-                //     this.state.cubeRotation.y + 0.005,
-                //     0
-                // ),
-                camera: {
-                    lon: lon + 0.1,
-                    lat,
-                    phi,
-                },
-            });
+            this.controls.update();
+            // const { alpha, beta, gamma, orient } = this.deviceOrientation;
+            // this.setState({
+            //     cameraQuaternion: createQuaternion( alpha, beta, gamma, orient ),
+            // });
         };
     }
 
     componentDidMount() {
-        window.addEventListener('deviceorientation', (e) => {
-
-            const { alpha, beta, gamma, absolute } = e;
-            console.log(alpha, beta, gamma, absolute);
-            this.setState({
-                camera: {
-                    lon: -alpha,
-                    lat: beta - 90,
-                },
-            })
-        })
+        const controls = new DeviceOrientationController(
+            this.refs.camera,
+            ReactDOM.findDOMNode(this.refs.panoRoot)
+        );
+        controls.connect();
+        this.controls = controls;
     }
     render() {
         const width = window.innerWidth; // canvas width
         const height = window.innerHeight; // canvas height
 
-        let { lon, lat } = this.state.camera;
-        lat = Math.max(-85, Math.min(85, lat));
-        const phi = THREE.Math.degToRad(90 - lat);
-        const theta = THREE.Math.degToRad(lon);
-
-        const cameraPosition = new THREE.Vector3(
-            500 * Math.sin(phi) * Math.cos(theta),
-            500 * Math.cos(phi),
-            500 * Math.sin(phi) * Math.sin(theta),
-        );
+        // let { lon, lat } = this.state.camera;
+        // lat = Math.max(-85, Math.min(85, lat));
+        // const phi = THREE.Math.degToRad(90 - lat);
+        // const theta = THREE.Math.degToRad(lon);
+        //
+        // const cameraPosition = new THREE.Vector3(
+        //     500 * Math.sin(phi) * Math.cos(theta),
+        //     500 * Math.cos(phi),
+        //     500 * Math.sin(phi) * Math.sin(theta),
+        // );
         
         // console.log(cameraPosition);
         return (
@@ -76,18 +61,14 @@ class Simple extends React.Component {
                 mainCamera="camera" // this points to the perspectiveCamera which has the name set to "camera" below
                 width={width}
                 height={height}
+                ref="panoRoot"
 
-                // onAnimate={this._onAnimate}
+                onAnimate={this._onAnimate}
             >
                 <scene>
                     <perspectiveCamera
                         name="camera"
-                        fov={70}
-                        aspect={width / height}
-                        near={1}
-                        far={1000}
-
-                        lookAt={cameraPosition}
+                        ref="camera"
                     />
                     <mesh
                         // rotation={this.state.cubeRotation}
