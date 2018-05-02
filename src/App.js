@@ -1,9 +1,12 @@
 import React from 'react';
-import React3 from 'react-three-renderer'
-import ReactDOM from 'react-dom';
 import * as THREE from 'three';
-import DeviceOrientationController from './utils/DeviceOrientationController';
+import attachOrbitControls from './threejs-controls/OrbitControls';
+import attachDeviceOrientationControls from './threejs-controls/DeviceOrientationControls';
 import sphericalImgUrl from './images/spherical_texture.jpg';
+
+// todo conside let webpack do it
+attachOrbitControls(THREE);
+attachDeviceOrientationControls(THREE);
 
 class Simple extends React.Component {
     constructor(props, context) {
@@ -26,10 +29,14 @@ class Simple extends React.Component {
         // invert the geometry on the x-axis so that all of the faces point inward
         geometry.scale( - 1, 1, 1 );
 
-        const material = new THREE.MeshBasicMaterial( {
-            map: new THREE.TextureLoader().load( sphericalImgUrl ),
-        } );
+        const texture = new THREE.TextureLoader().load( sphericalImgUrl );
+        // texture.offset = new THREE.Vector2( 0.1, 0 );
+        // console.log(texture.transformUv({ x: 0.5, y: 0.5 }));
 
+
+        const material = new THREE.MeshBasicMaterial( {
+            map: texture,
+        } );
         const mesh = new THREE.Mesh( geometry, material );
 
         scene.add( mesh );
@@ -41,21 +48,48 @@ class Simple extends React.Component {
         this.container.appendChild( rerenderer.domElement );
 
         // Add DeviceOrientation Controls
-        const controls = new DeviceOrientationController(
+        const orbitControls = new THREE.OrbitControls(
             camera,
-            this.container,
+            rerenderer.domElement,
         );
-        controls.connect();
+        orbitControls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+        orbitControls.dampingFactor = 0.25;
+        orbitControls.screenSpacePanning = false;
+        orbitControls.minDistance = 100;
+        orbitControls.maxDistance = 500;
+        orbitControls.maxPolarAngle = Math.PI / 2;
+
+        // add DeviceOrientationControls
+        const deviceOrientationControls = new THREE.DeviceOrientationControls(
+            camera
+        );
 
         this.camera = camera;
         this.scene = scene;
         this.rerenderer = rerenderer;
-        this.controls = controls;
+        this.orbitControls = orbitControls;
+        this.deviceOrientationControls = deviceOrientationControls;
+
+        this.controlsControl();
+    }
+
+    // switch controls
+    controlsControl = () => {
+        this.rerenderer.domElement.addEventListener('touchstart', () => {
+            this.orbitControls.update();
+            this.orbitControls.enabled = true;
+            this.deviceOrientationControls.enabled = false;
+        });
+        this.rerenderer.domElement.addEventListener('touchend', () => {
+            this.orbitControls.enabled = false;
+            this.deviceOrientationControls.enabled = true;
+        });
     }
 
     // Render loop
     animate = () => {
-        this.controls.update();
+        this.orbitControls.update();
+        this.deviceOrientationControls.update();
         this.rerenderer.render( this.scene, this.camera );
         requestAnimationFrame( this.animate );
     }
@@ -63,6 +97,7 @@ class Simple extends React.Component {
     componentDidMount() {
         this.init();
 
+        console.log(THREE.OrbitControls);
         this.animate();
     }
 
